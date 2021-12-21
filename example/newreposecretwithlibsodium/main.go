@@ -33,7 +33,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/00security/go-github/v39/github"
+	"github.com/00security/go-github/v41/github"
 	sodium "github.com/GoKillers/libsodium-go/cryptobox"
 	"golang.org/x/oauth2"
 )

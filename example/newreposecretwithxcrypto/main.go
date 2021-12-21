@@ -34,7 +34,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/00security/go-github/v39/github"
+	"github.com/00security/go-github/v41/github"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/oauth2"
 )

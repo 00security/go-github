@@ -295,7 +295,6 @@ func TestActionService_ListRepositoryWorkflowRuns(t *testing.T) {
 		"workflow_runs":[
 			{"id":298499444,"run_number":301,"created_at":"2020-04-11T11:14:54Z","updated_at":"2020-04-11T11:14:54Z"},
 			{"id":298499445,"run_number":302,"created_at":"2020-04-11T11:14:54Z","updated_at":"2020-04-11T11:14:54Z"}]}`)
-
 	})
 
 	opts := &ListWorkflowRunsOptions{ListOptions: ListOptions{Page: 2, PerPage: 2}}
@@ -335,6 +334,32 @@ func TestActionService_ListRepositoryWorkflowRuns(t *testing.T) {
 	})
 }
 
+func TestActionService_DeleteWorkflowRun(t *testing.T) {
+	client, mux, _, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/repos/o/r/actions/runs/399444496", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "DELETE")
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	ctx := context.Background()
+	if _, err := client.Actions.DeleteWorkflowRun(ctx, "o", "r", 399444496); err != nil {
+		t.Errorf("DeleteWorkflowRun returned error: %v", err)
+	}
+
+	const methodName = "DeleteWorkflowRun"
+	testBadOptions(t, methodName, func() (err error) {
+		_, err = client.Actions.DeleteWorkflowRun(ctx, "\n", "\n", 399444496)
+		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		return client.Actions.DeleteWorkflowRun(ctx, "o", "r", 399444496)
+	})
+}
+
 func TestActionService_DeleteWorkflowRunLogs(t *testing.T) {
 	client, mux, _, teardown := setup()
 	defer teardown()
@@ -367,7 +392,7 @@ func TestActionsService_GetWorkflowRunUsageByID(t *testing.T) {
 
 	mux.HandleFunc("/repos/o/r/actions/runs/29679449/timing", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		fmt.Fprint(w, `{"billable":{"UBUNTU":{"total_ms":180000,"jobs":1},"MACOS":{"total_ms":240000,"jobs":4},"WINDOWS":{"total_ms":300000,"jobs":2}},"run_duration_ms":500000}`)
+		fmt.Fprint(w, `{"billable":{"UBUNTU":{"total_ms":180000,"jobs":1,"job_runs":[{"job_id":1,"duration_ms":60000}]},"MACOS":{"total_ms":240000,"jobs":2,"job_runs":[{"job_id":2,"duration_ms":30000},{"job_id":3,"duration_ms":10000}]},"WINDOWS":{"total_ms":300000,"jobs":2}},"run_duration_ms":500000}`)
 	})
 
 	ctx := context.Background()
@@ -381,10 +406,26 @@ func TestActionsService_GetWorkflowRunUsageByID(t *testing.T) {
 			Ubuntu: &WorkflowRunBill{
 				TotalMS: Int64(180000),
 				Jobs:    Int(1),
+				JobRuns: []*WorkflowRunJobRun{
+					{
+						JobID:      Int(1),
+						DurationMS: Int64(60000),
+					},
+				},
 			},
 			MacOS: &WorkflowRunBill{
 				TotalMS: Int64(240000),
-				Jobs:    Int(4),
+				Jobs:    Int(2),
+				JobRuns: []*WorkflowRunJobRun{
+					{
+						JobID:      Int(2),
+						DurationMS: Int64(30000),
+					},
+					{
+						JobID:      Int(3),
+						DurationMS: Int64(10000),
+					},
+				},
 			},
 			Windows: &WorkflowRunBill{
 				TotalMS: Int64(300000),

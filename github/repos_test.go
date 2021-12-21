@@ -360,7 +360,7 @@ func TestRepositoriesService_Get(t *testing.T) {
 	mux.HandleFunc("/repos/o/r", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", strings.Join(wantAcceptHeaders, ", "))
-		fmt.Fprint(w, `{"id":1,"name":"n","description":"d","owner":{"login":"l"},"license":{"key":"mit"}}`)
+		fmt.Fprint(w, `{"id":1,"name":"n","description":"d","owner":{"login":"l"},"license":{"key":"mit"},"security_and_analysis":{"advanced_security":{"status":"enabled"},"secret_scanning":{"status":"enabled"}}}`)
 	})
 
 	ctx := context.Background()
@@ -369,7 +369,7 @@ func TestRepositoriesService_Get(t *testing.T) {
 		t.Errorf("Repositories.Get returned error: %v", err)
 	}
 
-	want := &Repository{ID: Int64(1), Name: String("n"), Description: String("d"), Owner: &User{Login: String("l")}, License: &License{Key: String("mit")}}
+	want := &Repository{ID: Int64(1), Name: String("n"), Description: String("d"), Owner: &User{Login: String("l")}, License: &License{Key: String("mit")}, SecurityAndAnalysis: &SecurityAndAnalysis{AdvancedSecurity: &AdvancedSecurity{Status: String("enabled")}, SecretScanning: &SecretScanning{String("enabled")}}}
 	if !cmp.Equal(got, want) {
 		t.Errorf("Repositories.Get returned %+v, want %+v", got, want)
 	}
@@ -981,6 +981,51 @@ func TestRepositoriesService_GetBranch_notFound(t *testing.T) {
 	})
 }
 
+func TestRepositoriesService_RenameBranch(t *testing.T) {
+	client, mux, _, teardown := setup()
+	defer teardown()
+
+	renameBranchReq := "nn"
+
+	mux.HandleFunc("/repos/o/r/branches/b/rename", func(w http.ResponseWriter, r *http.Request) {
+		v := new(renameBranchRequest)
+		json.NewDecoder(r.Body).Decode(v)
+
+		testMethod(t, r, "POST")
+		want := &renameBranchRequest{NewName: "nn"}
+		if !cmp.Equal(v, want) {
+			t.Errorf("Request body = %+v, want %+v", v, want)
+		}
+
+		fmt.Fprint(w, `{"protected":true,"name":"nn"}`)
+	})
+
+	ctx := context.Background()
+	got, _, err := client.Repositories.RenameBranch(ctx, "o", "r", "b", renameBranchReq)
+	if err != nil {
+		t.Errorf("Repositories.RenameBranch returned error: %v", err)
+	}
+
+	want := &Branch{Name: String("nn"), Protected: Bool(true)}
+	if !cmp.Equal(got, want) {
+		t.Errorf("Repositories.RenameBranch returned %+v, want %+v", got, want)
+	}
+
+	const methodName = "RenameBranch"
+	testBadOptions(t, methodName, func() (err error) {
+		_, _, err = client.Repositories.RenameBranch(ctx, "\n", "\n", "\n", renameBranchReq)
+		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Repositories.RenameBranch(ctx, "o", "r", "b", renameBranchReq)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
+}
+
 func TestRepositoriesService_GetBranchProtection(t *testing.T) {
 	client, mux, _, teardown := setup()
 	defer teardown()
@@ -1090,7 +1135,6 @@ func TestRepositoriesService_GetBranchProtection_noDismissalRestrictions(t *test
 	defer teardown()
 
 	mux.HandleFunc("/repos/o/r/branches/b/protection", func(w http.ResponseWriter, r *http.Request) {
-
 		testMethod(t, r, "GET")
 		// TODO: remove custom Accept header when this API fully launches
 		testHeader(t, r, "Accept", mediaTypeRequiredApprovingReviewsPreview)
@@ -1147,6 +1191,32 @@ func TestRepositoriesService_GetBranchProtection_noDismissalRestrictions(t *test
 	}
 	if !cmp.Equal(protection, want) {
 		t.Errorf("Repositories.GetBranchProtection returned %+v, want %+v", protection, want)
+	}
+}
+
+func TestRepositoriesService_GetBranchProtection_branchNotProtected(t *testing.T) {
+	client, mux, _, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/repos/o/r/branches/b/protection", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, `{
+			"message": %q,
+			"documentation_url": "https://docs.github.com/rest/reference/repos#get-branch-protection"
+			}`, githubBranchNotProtected)
+	})
+
+	ctx := context.Background()
+	protection, _, err := client.Repositories.GetBranchProtection(ctx, "o", "r", "b")
+
+	if protection != nil {
+		t.Errorf("Repositories.GetBranchProtection returned non-nil protection data")
+	}
+
+	if err != ErrBranchNotProtected {
+		t.Errorf("Repositories.GetBranchProtection returned an invalid error: %v", err)
 	}
 }
 
@@ -1387,6 +1457,32 @@ func TestRepositoriesService_GetRequiredStatusChecks(t *testing.T) {
 	})
 }
 
+func TestRepositoriesService_GetRequiredStatusChecks_branchNotProtected(t *testing.T) {
+	client, mux, _, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/repos/o/r/branches/b/protection/required_status_checks", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, `{
+			"message": %q,
+			"documentation_url": "https://docs.github.com/rest/reference/repos#get-branch-protection"
+			}`, githubBranchNotProtected)
+	})
+
+	ctx := context.Background()
+	checks, _, err := client.Repositories.GetRequiredStatusChecks(ctx, "o", "r", "b")
+
+	if checks != nil {
+		t.Errorf("Repositories.GetRequiredStatusChecks returned non-nil status-checks data")
+	}
+
+	if err != ErrBranchNotProtected {
+		t.Errorf("Repositories.GetRequiredStatusChecks returned an invalid error: %v", err)
+	}
+}
+
 func TestRepositoriesService_UpdateRequiredStatusChecks(t *testing.T) {
 	client, mux, _, teardown := setup()
 	defer teardown()
@@ -1500,6 +1596,32 @@ func TestRepositoriesService_ListRequiredStatusChecksContexts(t *testing.T) {
 		}
 		return resp, err
 	})
+}
+
+func TestRepositoriesService_ListRequiredStatusChecksContexts_branchNotProtected(t *testing.T) {
+	client, mux, _, teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/repos/o/r/branches/b/protection/required_status_checks/contexts", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, `{
+			"message": %q,
+			"documentation_url": "https://docs.github.com/rest/reference/repos#get-branch-protection"
+			}`, githubBranchNotProtected)
+	})
+
+	ctx := context.Background()
+	contexts, _, err := client.Repositories.ListRequiredStatusChecksContexts(ctx, "o", "r", "b")
+
+	if contexts != nil {
+		t.Errorf("Repositories.ListRequiredStatusChecksContexts returned non-nil contexts data")
+	}
+
+	if err != ErrBranchNotProtected {
+		t.Errorf("Repositories.ListRequiredStatusChecksContexts returned an invalid error: %v", err)
+	}
 }
 
 func TestRepositoriesService_GetPullRequestReviewEnforcement(t *testing.T) {
@@ -2319,8 +2441,8 @@ func TestRepositoriesService_Dispatch(t *testing.T) {
 			Baz: false,
 		},
 	}
-	for _, tc := range testCases {
 
+	for _, tc := range testCases {
 		if tc == nil {
 			input = DispatchRequestOptions{EventType: "go"}
 		} else {
@@ -2353,4 +2475,32 @@ func TestRepositoriesService_Dispatch(t *testing.T) {
 		}
 		return resp, err
 	})
+}
+
+func TestAdvancedSecurity_Marshal(t *testing.T) {
+	testJSONMarshal(t, &AdvancedSecurity{}, "{}")
+
+	u := &AdvancedSecurity{
+		Status: String("status"),
+	}
+
+	want := `{
+		"status": "status"
+	}`
+
+	testJSONMarshal(t, u, want)
+}
+
+func TestAuthorizedActorsOnly_Marshal(t *testing.T) {
+	testJSONMarshal(t, &AuthorizedActorsOnly{}, "{}")
+
+	u := &AuthorizedActorsOnly{
+		From: Bool(true),
+	}
+
+	want := `{
+		"from" : true
+	}`
+
+	testJSONMarshal(t, u, want)
 }

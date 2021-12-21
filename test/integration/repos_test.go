@@ -15,7 +15,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/00security/go-github/v39/github"
+	"github.com/00security/go-github/v41/github"
 	"github.com/google/go-cmp/cmp"
 )
 

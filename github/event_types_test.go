@@ -82,6 +82,28 @@ func TestEditChange_Marshal_BaseChange(t *testing.T) {
 	testJSONMarshal(t, u, want)
 }
 
+func TestEditChange_Marshal_Repo(t *testing.T) {
+	testJSONMarshal(t, &EditChange{}, "{}")
+
+	u := &EditChange{
+		Repo: &EditRepo{
+			Name: &RepoName{
+				From: String("old-repo-name"),
+			},
+		},
+	}
+
+	want := `{
+		"repository": {
+			"name": {
+				"from": "old-repo-name"
+			}
+		}
+	}`
+
+	testJSONMarshal(t, u, want)
+}
+
 func TestProjectChange_Marshal_NameChange(t *testing.T) {
 	testJSONMarshal(t, &ProjectChange{}, "{}")
 
@@ -1726,6 +1748,28 @@ func TestIssueCommentEvent_Marshal(t *testing.T) {
 			},
 			SuspendedAt: &Timestamp{referenceTime},
 		},
+		Organization: &Organization{
+			BillingEmail:                         String("be"),
+			Blog:                                 String("b"),
+			Company:                              String("c"),
+			Email:                                String("e"),
+			TwitterUsername:                      String("tu"),
+			Location:                             String("loc"),
+			Name:                                 String("n"),
+			Description:                          String("d"),
+			IsVerified:                           Bool(true),
+			HasOrganizationProjects:              Bool(true),
+			HasRepositoryProjects:                Bool(true),
+			DefaultRepoPermission:                String("drp"),
+			MembersCanCreateRepos:                Bool(true),
+			MembersCanCreateInternalRepos:        Bool(true),
+			MembersCanCreatePrivateRepos:         Bool(true),
+			MembersCanCreatePublicRepos:          Bool(false),
+			MembersAllowedRepositoryCreationType: String("marct"),
+			MembersCanCreatePages:                Bool(true),
+			MembersCanCreatePublicPages:          Bool(false),
+			MembersCanCreatePrivatePages:         Bool(true),
+		},
 	}
 
 	want := `{
@@ -1862,6 +1906,28 @@ func TestIssueCommentEvent_Marshal(t *testing.T) {
 				"url": "u"
 			},
 			"suspended_at": ` + referenceTimeStr + `
+		},
+		"organization": {
+			"name": "n",
+			"company": "c",
+			"blog": "b",
+			"location": "loc",
+			"email": "e",
+			"twitter_username": "tu",
+			"description": "d",
+			"billing_email": "be",
+			"is_verified": true,
+			"has_organization_projects": true,
+			"has_repository_projects": true,
+			"default_repository_permission": "drp",
+			"members_can_create_repositories": true,
+			"members_can_create_public_repositories": false,
+			"members_can_create_private_repositories": true,
+			"members_can_create_internal_repositories": true,
+			"members_allowed_repository_creation_type": "marct",
+			"members_can_create_pages": true,
+			"members_can_create_public_pages": false,
+			"members_can_create_private_pages": true
 		}
 	}`
 
@@ -3410,6 +3476,28 @@ func TestPushEvent_Marshal(t *testing.T) {
 			},
 			SuspendedAt: &Timestamp{referenceTime},
 		},
+		Organization: &Organization{
+			BillingEmail:                         String("be"),
+			Blog:                                 String("b"),
+			Company:                              String("c"),
+			Email:                                String("e"),
+			TwitterUsername:                      String("tu"),
+			Location:                             String("loc"),
+			Name:                                 String("n"),
+			Description:                          String("d"),
+			IsVerified:                           Bool(true),
+			HasOrganizationProjects:              Bool(true),
+			HasRepositoryProjects:                Bool(true),
+			DefaultRepoPermission:                String("drp"),
+			MembersCanCreateRepos:                Bool(true),
+			MembersCanCreateInternalRepos:        Bool(true),
+			MembersCanCreatePrivateRepos:         Bool(true),
+			MembersCanCreatePublicRepos:          Bool(false),
+			MembersAllowedRepositoryCreationType: String("marct"),
+			MembersCanCreatePages:                Bool(true),
+			MembersCanCreatePublicPages:          Bool(false),
+			MembersCanCreatePrivatePages:         Bool(true),
+		},
 	}
 
 	want := `{
@@ -3550,6 +3638,28 @@ func TestPushEvent_Marshal(t *testing.T) {
 				"url": "u"
 			},
 			"suspended_at": ` + referenceTimeStr + `
+		},
+		"organization": {
+			"name": "n",
+			"company": "c",
+			"blog": "b",
+			"location": "loc",
+			"email": "e",
+			"twitter_username": "tu",
+			"description": "d",
+			"billing_email": "be",
+			"is_verified": true,
+			"has_organization_projects": true,
+			"has_repository_projects": true,
+			"default_repository_permission": "drp",
+			"members_can_create_repositories": true,
+			"members_can_create_public_repositories": false,
+			"members_can_create_private_repositories": true,
+			"members_can_create_internal_repositories": true,
+			"members_allowed_repository_creation_type": "marct",
+			"members_can_create_pages": true,
+			"members_can_create_public_pages": false,
+			"members_can_create_private_pages": true
 		}
 	}`
 
