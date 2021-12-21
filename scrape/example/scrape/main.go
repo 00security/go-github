@@ -1,4 +1,4 @@
-// The scrape tool demonstrates use of the github.com/google/go-github/scrape
+// The scrape tool demonstrates use of the github.com/00security/go-github/scrape
 // package to fetch data from GitHub.  The tool lists whether third-party app
 // restrictions are enabled for an organization, and lists information about
 // OAuth apps requested for the org.
@@ -12,7 +12,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/scrape"
+	"github.com/00security/go-github/scrape"
 )
 
 var (

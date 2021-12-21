@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/00security/go-github/v41/github"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-github/v41/github"
 )
 
 func Test_AppRestrictionsEnabled(t *testing.T) {
